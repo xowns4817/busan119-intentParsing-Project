@@ -14,10 +14,15 @@ import java.util.*;
 
 public class PoiExcel {
 
-    public static final String excelFilePath = "/home/ktj/바탕화면";
-    public static final String excelFileName = "test_busan.xlsx";
-    public static final String[ ] intents = {"구급", "구조", "화재", "기타", "추가문의", "콜센터"};
-    public static final String txtFilePath = "/home/ktj/바탕화면/의도/";
+    public static final String excelFilePath = "C:\\Users\\KTJ\\Desktop\\부산소방서\\busan119-intentParsing-Project\\src\\main\\java\\com\\example\\excelparsing\\testExcel";
+    public static final String excelFileName = "busan119_20201119.xlsx";
+    public static final String[ ] intents = {"구급", "구조", "화재", "기타", "추가문의"};
+    public static final String[ ] speakers = {"콜센터"};
+    public static final String txtFilePath = "C:\\Users\\KTJ\\Desktop\\부산소방서\\busan119-intentParsing-Project\\src\\main\\java\\com\\example\\excelparsing\\intent\\";
+    public static int rowCount = 0;
+    public static int changeRowCount = 0;
+    public static int changeIntentCount[ ] = {0, 0, 0, 0, 0, 0};
+    public static int changeSpeakerCount = 0;
 
     //의도 관리 List
     public static List<String> firstAidList = new ArrayList<>(); // 구급
@@ -31,19 +36,42 @@ public class PoiExcel {
 
     public static void main(String args[ ]) {
 
-        System.out.println("------parsing program running ---------");
+        printInitLog();
         readIntentFiles();
         //CreateExcel();
         ReadExcel();
-        System.out.println("------parsing program end ---------");
+        printResultLog();
+
     }
 
+    public static void printInitLog( ) {
+        System.out.println("------parsing busan 119 intent ---------");
+        System.out.println("input File : " + excelFilePath + excelFileName);
+        System.out.println("-------runing process ! ----------");
+    };
+
+    public static void printResultLog( ) {
+        System.out.println("----------------result----------");
+        System.out.println("전체 열 갯수 : " + rowCount);
+        System.out.println("바뀐 의도 갯수 : " + changeRowCount);
+        for(int i=0; i<intents.length; i++) {
+            System.out.println(intents[i] + ": " + changeIntentCount[i]);
+        }
+        for(int i=0; i<speakers.length; i++) {
+            System.out.println(speakers[i] + ": " + changeSpeakerCount);
+        }
+
+        System.out.println("------parsing program end ---------");
+    };
+
+
+    //의도 데이터를 메모리에 로드
     public static void readIntentFiles( )  {
         System.out.println("------readIntentFIles---------");
         try{
             for(int i=0; i<intents.length; i++) {
-                //파일 객체 생성
 
+                // 의도
                 String FileName = txtFilePath + intents[i] + ".txt";
                 File file = new File(FileName);
                 //입력 스트림 생성
@@ -58,17 +86,150 @@ public class PoiExcel {
                     else if(i==2) fireList.add(line);
                     else if(i==3) etcList.add(line);
                     else if(i==4) additionalInquiryList.add(line);
-                    else if(i==5) callCenterList.add(line);
                 }
                 //.readLine()은 끝에 개행문자를 읽지 않는다.
                 bufReader.close();
             }
+
+            // 발화자
+            for(int i=0; i<speakers.length; i++) {
+
+                String FileName = txtFilePath + speakers[i] + ".txt";
+                File file = new File(FileName);
+                //입력 스트림 생성
+                FileReader filereader = new FileReader(file);
+                //입력 버퍼 생성
+                BufferedReader bufReader = new BufferedReader(filereader);
+                String line = "";
+                while ((line = bufReader.readLine()) != null) {
+                    if(line == null || line.length() == 0) continue;
+                    callCenterList.add(line);
+                }
+                //.readLine()은 끝에 개행문자를 읽지 않는다.
+                bufReader.close();
+            }
+
         }catch (FileNotFoundException e) {
             // TODO: handle exception
         }catch(IOException e){
             System.out.println(e);
         }
     }
+
+    public static void ReadExcel() {
+        System.out.println("------start ReadExcel---------");
+        try {
+            FileInputStream file = new FileInputStream(new File(excelFilePath, excelFileName));
+
+            // 엑셀 파일로 Workbook instance를 생성한다.
+            XSSFWorkbook workbook = new XSSFWorkbook(file);
+
+            // workbook의 첫번째 sheet를 가저온다.
+            XSSFSheet sheet = workbook.getSheetAt(0);
+
+            // 만약 특정 이름의 시트를 찾는다면 workbook.getSheet("찾는 시트의 이름");
+
+            // 모든 행(row)들을 조회한다.
+            Iterator<Row> rowIterator = sheet.iterator();
+            while (rowIterator.hasNext()) {
+                rowCount++;
+                org.apache.poi.ss.usermodel.Row row = rowIterator.next();
+
+                // 각각의 행에 존재하는 모든 열(cell)을 순회한다.
+                Iterator<Cell> cellIterator = row.cellIterator();
+
+                int idx = -1; // 출동상황중 해당없음 카테고리만 확인하면됨
+                boolean mustChange=false;
+                String ttsSentense = "";
+                int tobeIntentIdx = 0; // mustChange가 true라면 바뀔의도
+
+                while (cellIterator.hasNext()) {
+                    idx++;
+                    Cell cell = cellIterator.next();
+                    // cell의 타입을 하고, 값을 가져온다.
+                    switch (cell.getCellType()) {
+                        case Cell.CELL_TYPE_NUMERIC:
+                            System.out.print((int) cell.getNumericCellValue() + "\t"); //getNumericCellValue 메서드는 기본으로 double형 반환
+                            break;
+                        case Cell.CELL_TYPE_STRING:
+                            if(idx == 3) ttsSentense = cell.getStringCellValue();
+                            else if(idx == 4) {
+                                String intent = cell.getStringCellValue();
+                                if(intent.equals("해당없음")) {
+                                    tobeIntentIdx = matchSencenToIntent(ttsSentense);
+                                    if(tobeIntentIdx != -1) {
+                                        mustChange = true;
+                                        changeIntentCount[tobeIntentIdx]++;
+                                        changeRowCount++;
+                                    }
+                                }
+                            } else if(idx == 5 && mustChange) {
+                                cell.setCellValue(intents[tobeIntentIdx]);
+                            } else if(idx == 6) {
+                                int speakerType = getSpeakerType(ttsSentense);
+                                if(speakerType == 0) { // 콜센터
+                                    cell.setCellValue("콜센터");
+                                    changeSpeakerCount++;
+                                    changeRowCount++;
+                                }
+                            }
+                            break;
+                    }
+                }
+            }
+
+            //수정된 열을 다시 써준다.
+            FileOutputStream out = new FileOutputStream(new File(excelFilePath, excelFileName));
+            workbook.write(out);
+            out.close();
+            file.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // 추후 의도별로 쓰레드 생성해서 병렬처리 고려
+    public static int matchSencenToIntent(String ttsSentense) {
+        List<String> intentList = null;
+
+        for(int i=0; i<intents.length; i++) {
+            if(i==0) intentList = firstAidList;
+            else if(i==1) intentList = rescrueList;
+            else if(i==2) intentList = fireList;
+            else if(i==3) intentList = etcList;
+            else if(i==4) intentList = additionalInquiryList;
+            else continue; // 콜센터일 경우 의도매칭 필요없음
+
+            for(int j=0; j<intentList.size(); j++) {
+                String learningSentense = intentList.get(j);
+
+                //ttsSentense가 학습데이터를 포함하면
+                boolean isContained = ttsSentense.contains(learningSentense);
+                if(isContained) return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * 콜센터 or 신고자
+     * 콜센터 : 0
+     * 신고자 : 1
+     */
+
+    public static int getSpeakerType(String ttsSentense) {
+
+        for(int i=0; i<callCenterList.size(); i++) {
+            //ttsSentense가 학습데이터를 포함하면
+            String learningSentense = callCenterList.get(i);
+            boolean isContained = ttsSentense.contains(learningSentense);
+            if(isContained) return 0;
+        }
+
+        return 1;
+    }
+
 
     public static void CreateExcel( ) {
         // 빈 Workbook 생성
@@ -113,109 +274,4 @@ public class PoiExcel {
         }
     }
 
-    public static void ReadExcel() {
-        System.out.println("------start ReadExcel---------");
-        try {
-            FileInputStream file = new FileInputStream(new File(excelFilePath, excelFileName));
-
-            // 엑셀 파일로 Workbook instance를 생성한다.
-            XSSFWorkbook workbook = new XSSFWorkbook(file);
-
-            // workbook의 첫번째 sheet를 가저온다.
-            XSSFSheet sheet = workbook.getSheetAt(0);
-
-            // 만약 특정 이름의 시트를 찾는다면 workbook.getSheet("찾는 시트의 이름");
-
-            // 모든 행(row)들을 조회한다.
-            Iterator<Row> rowIterator = sheet.iterator();
-            while (rowIterator.hasNext()) {
-                org.apache.poi.ss.usermodel.Row row = rowIterator.next();
-
-                // 각각의 행에 존재하는 모든 열(cell)을 순회한다.
-                Iterator<Cell> cellIterator = row.cellIterator();
-
-                int idx = -1; // 출동상황중 해당없음 카테고리만 확인하면됨
-                boolean mustChange=false;
-                String ttsSentense = "";
-                String tobeIntent = "";
-
-                while (cellIterator.hasNext()) {
-                    idx++;
-                    Cell cell = cellIterator.next();
-                    // cell의 타입을 하고, 값을 가져온다.
-                    switch (cell.getCellType()) {
-                        case Cell.CELL_TYPE_NUMERIC:
-                            System.out.print((int) cell.getNumericCellValue() + "\t"); //getNumericCellValue 메서드는 기본으로 double형 반환
-                            break;
-                        case Cell.CELL_TYPE_STRING:
-                            if(idx == 3) ttsSentense = cell.getStringCellValue();
-                            else if(idx == 4) {
-                                String intent = cell.getStringCellValue();
-                                if(intent.equals("해당없음")) {
-                                    tobeIntent = matchSencenToIntent(ttsSentense);
-                                    if(tobeIntent != null) {
-                                        mustChange = true;
-                                    }
-                                }
-                            } else if(idx == 5 && mustChange) {
-                                cell.setCellValue(tobeIntent);
-                            } else if(idx == 6) {
-                                int speakerType = getSpeakerType(ttsSentense);
-                                if(speakerType == 1) { // 콜센터
-                                    cell.setCellValue("콜센터");
-                                }
-                            }
-                            //System.out.print(cell.getStringCellValue() + "\t");
-                            break;
-                    }
-                }
-            }
-
-            //수정된 열을 다시 써준다.
-            FileOutputStream out = new FileOutputStream(new File(excelFilePath, excelFileName));
-            workbook.write(out);
-            out.close();
-            file.close();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    // 추후 의도별로 쓰레드 생성해서 병렬처리 고려
-    public static String matchSencenToIntent(String ttsSentense) {
-        List<String> intentList = null;
-
-        for(int i=0; i<intents.length; i++) {
-            if(i==0) intentList = firstAidList;
-            else if(i==1) intentList = rescrueList;
-            else if(i==2) intentList = fireList;
-            else if(i==3) intentList = etcList;
-            else if(i==4) intentList = additionalInquiryList;
-
-            for(int j=0; j<intentList.size(); j++) {
-                String learningSentense = intentList.get(j);
-
-                //ttsSentense가 학습데이터를 포함하면
-                boolean isContained = ttsSentense.contains(learningSentense);
-                if(isContained) return intents[i];
-            }
-        }
-        return null;
-    }
-
-    // 콜센터 or 신고자
-    // 콜센터 : 1
-    // 신고자 : 2
-    public static int getSpeakerType(String ttsSentense) {
-
-        for(int i=0; i<callCenterList.size(); i++) {
-            //ttsSentense가 학습데이터를 포함하면
-            String learningSentense = callCenterList.get(i);
-            boolean isContained = ttsSentense.contains(learningSentense);
-            if(isContained) return 1;
-        }
-
-        return 2;
-    }
 }
