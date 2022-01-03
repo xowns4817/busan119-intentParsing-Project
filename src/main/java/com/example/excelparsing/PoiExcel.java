@@ -10,6 +10,9 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 public class PoiExcel {
@@ -23,10 +26,10 @@ public class PoiExcel {
     public static final String[ ] excludeWords = {"아파트", "불편", "불안", "불렀", "불거든", "기다리", "벌어", "벌써", "벌었", "벌겋" }; // 아파, 불, 다리, 벌
     //public static final String txtFilePath = "C:\\Users\\KTJ\\Desktop\\부산소방서\\busan119-intentParsing-Project\\src\\main\\java\\com\\example\\excelparsing\\intent\\";
     public static final String txtFilePath = "/home/ktj/바탕화면/의도/";
-    public static int rowCount = 0;
-    public static int changeRowCount = 0;
-    public static int changeIntentCount[ ] = {0, 0, 0, 0, 0, 0};
-    public static int changeSpeakerCount = 0;
+    public static long rowCount = 0;
+    public static long changeRowCount = 0;
+    public static long changeIntentCount[ ] = {0, 0, 0, 0, 0, 0};
+    public static long changeSpeakerCount = 0;
 
     //의도 관리 List
     public static List<String> firstAidList = new ArrayList<>(); // 구급
@@ -45,7 +48,6 @@ public class PoiExcel {
         //CreateExcel();
         ReadExcel();
         printResultLog();
-
     }
 
     public static void printInitLog( ) {
@@ -57,7 +59,7 @@ public class PoiExcel {
     public static void printResultLog( ) {
         System.out.println("----------------result----------");
         System.out.println("전체 열 갯수 : " + rowCount);
-        System.out.println("바뀐 의도 갯수 : " + changeRowCount);
+        System.out.println("바뀐 의도 갯수(해당없음 -> 긴급호 or 신고자 -> 콜센터) : " + changeRowCount);
         for(int i=0; i<intents.length; i++) {
             System.out.println(intents[i] + ": " + changeIntentCount[i]);
         }
@@ -68,22 +70,30 @@ public class PoiExcel {
         System.out.println("------parsing program end ---------");
     };
 
-
     //의도 데이터를 메모리에 로드
     public static void readIntentFiles( )  {
         System.out.println("------readIntentFIles---------");
+
         try{
             for(int i=0; i<intents.length; i++) {
 
                 // 의도
                 String FileName = txtFilePath + intents[i] + ".txt";
+
                 File file = new File(FileName);
+                // 긴급호 각 의도별 전체 갯수(lineCount)
+                Path filePath = Paths.get(FileName);
+                long lineAllCount = Files.lines(filePath).count();
+
                 //입력 스트림 생성
                 FileReader filereader = new FileReader(file);
                 //입력 버퍼 생성
                 BufferedReader bufReader = new BufferedReader(filereader);
                 String line = "";
+                long lineCount = 0;
                 while ((line = bufReader.readLine()) != null) {
+                    lineCount++;
+                    System.out.print("Start Data Loading to Memory Processing("+intents[i]+") : " + (((double)lineCount/(double)lineAllCount))*100 + "% " + "\r");
                     if(line == null || line.length() == 0) continue;
                     if(i==0) firstAidList.add(line);
                     else if(i==1) rescrueList.add(line);
@@ -93,6 +103,7 @@ public class PoiExcel {
                 }
                 //.readLine()은 끝에 개행문자를 읽지 않는다.
                 bufReader.close();
+                System.out.println("Start Data Loading to Memory Processing("+intents[i]+"): Done!          ");
             }
 
             // 발화자
@@ -100,17 +111,26 @@ public class PoiExcel {
 
                 String FileName = txtFilePath + speakers[i] + ".txt";
                 File file = new File(FileName);
+
+                // 긴급호 각 의도별 전체 갯수(lineCount)
+                Path filePath = Paths.get(FileName);
+                long lineAllCount = Files.lines(filePath).count();
+
                 //입력 스트림 생성
                 FileReader filereader = new FileReader(file);
                 //입력 버퍼 생성
                 BufferedReader bufReader = new BufferedReader(filereader);
                 String line = "";
+                long lineCount = 0;
                 while ((line = bufReader.readLine()) != null) {
+                    lineCount++;
+                    System.out.print("Start Data Loading to Memory Processing("+speakers[i]+") : " + (((double)lineCount/(double)lineAllCount))*100 + "% " + "\r");
                     if(line == null || line.length() == 0) continue;
                     callCenterList.add(line);
                 }
                 //.readLine()은 끝에 개행문자를 읽지 않는다.
                 bufReader.close();
+                System.out.println("Start Data Loading to Memory Processing("+speakers[i]+"): Done!          ");
             }
 
         }catch (FileNotFoundException e) {
@@ -135,8 +155,13 @@ public class PoiExcel {
 
             // 모든 행(row)들을 조회한다.
             Iterator<Row> rowIterator = sheet.iterator();
+            int sheetRowCount = sheet.getPhysicalNumberOfRows();
+            System.out.println("전체 열 수 : "  + sheetRowCount);
+
             while (rowIterator.hasNext()) {
                 rowCount++;
+
+                System.out.print("Processing: " + (((double)rowCount/(double)sheetRowCount))*100 + "% " + "\r");
                 org.apache.poi.ss.usermodel.Row row = rowIterator.next();
 
                 // 각각의 행에 존재하는 모든 열(cell)을 순회한다.
@@ -188,6 +213,7 @@ public class PoiExcel {
             out.close();
             file.close();
 
+            System.out.println("Reading & Update Excel Data Processing: Done!          ");
         } catch (IOException e) {
             e.printStackTrace();
         }
