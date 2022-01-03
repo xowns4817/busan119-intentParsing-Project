@@ -14,11 +14,15 @@ import java.util.*;
 
 public class PoiExcel {
 
-    public static final String excelFilePath = "C:\\Users\\KTJ\\Desktop\\부산소방서\\busan119-intentParsing-Project\\src\\main\\java\\com\\example\\excelparsing\\testExcel";
-    public static final String excelFileName = "busan119_20201119.xlsx";
+    //public static final String excelFilePath = "C:\\Users\\KTJ\\Desktop\\부산소방서\\busan119-intentParsing-Project\\src\\main\\java\\com\\example\\excelparsing\\testExcel";
+    //public static final String excelFileName = "busan119_20201119.xlsx";
+    public static final String excelFilePath = "/home/ktj/바탕화면";
+    public static final String excelFileName = "test_busan.xlsx";
     public static final String[ ] intents = {"구급", "구조", "화재", "기타", "추가문의"};
     public static final String[ ] speakers = {"콜센터"};
-    public static final String txtFilePath = "C:\\Users\\KTJ\\Desktop\\부산소방서\\busan119-intentParsing-Project\\src\\main\\java\\com\\example\\excelparsing\\intent\\";
+    public static final String[ ] excludeWords = {"아파트", "불편", "불안", "불렀", "불거든", "기다리", "벌어", "벌써", "벌었", "벌겋" }; // 아파, 불, 다리, 벌
+    //public static final String txtFilePath = "C:\\Users\\KTJ\\Desktop\\부산소방서\\busan119-intentParsing-Project\\src\\main\\java\\com\\example\\excelparsing\\intent\\";
+    public static final String txtFilePath = "/home/ktj/바탕화면/의도/";
     public static int rowCount = 0;
     public static int changeRowCount = 0;
     public static int changeIntentCount[ ] = {0, 0, 0, 0, 0, 0};
@@ -206,7 +210,21 @@ public class PoiExcel {
 
                 //ttsSentense가 학습데이터를 포함하면
                 boolean isContained = ttsSentense.contains(learningSentense);
-                if(isContained) return i;
+                if(isContained) {
+                    // "아파(트)에 고라니가 돌아다녀서 불(안)해요"와 같은 예외 케이스 처리(아파(트), 불(편), 불(안), 불(렀)는 제외)
+                    boolean isContainedExcludeWord = false;
+                    int learnDataFindIdx = ttsSentense.indexOf(learningSentense);
+                    for(int k=0; k< excludeWords.length; k++) {
+                        String excludeWord = excludeWords[k];
+                        int exludeDataFindIdx = ttsSentense.indexOf(excludeWord);
+                        if(learnDataFindIdx == exludeDataFindIdx) {
+                            isContainedExcludeWord=true;
+                            break;
+                        };
+                    }
+                    if(isContainedExcludeWord) continue;
+                    return i;
+                }
             }
         }
         return -1;
