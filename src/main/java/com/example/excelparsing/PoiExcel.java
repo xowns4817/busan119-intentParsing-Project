@@ -199,7 +199,6 @@ public class PoiExcel {
                                 if(speakerType == 0) { // 콜센터
                                     cell.setCellValue("콜센터");
                                     changeSpeakerCount++;
-                                    changeRowCount++;
                                 }
                             }
                             break;
