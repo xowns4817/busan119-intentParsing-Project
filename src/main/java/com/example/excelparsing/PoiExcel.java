@@ -20,10 +20,10 @@ public class PoiExcel {
     //public static final String excelFilePath = "C:\\Users\\KTJ\\Desktop\\부산소방서\\busan119-intentParsing-Project\\src\\main\\java\\com\\example\\excelparsing\\testExcel";
     //public static final String excelFileName = "busan119_20201119.xlsx";
     public static final String excelFilePath = "/home/ktj/바탕화면";
-    public static final String excelFileName = "test_busan.xlsx";
+    public static final String excelFileName = "test_busan_14.xlsx";
     public static final String[ ] intents = {"구급", "구조", "화재", "기타", "추가문의"};
     public static final String[ ] speakers = {"콜센터"};
-    public static final String[ ] excludeWords = {"아파트", "불편", "불안", "불렀", "불거든", "기다리", "벌어", "벌써", "벌었", "벌겋" }; // 아파, 불, 다리, 벌
+    public static final String[ ] excludeWords = {"아파트", "불편", "불안", "불렀", "불거든","불가", "인사불성", "고집불통", "숯불갈비", "불고기", "불루", "기다리", "벌어", "벌써", "벌었", "벌겋" }; // 아파, 불, 다리, 벌
     //public static final String txtFilePath = "C:\\Users\\KTJ\\Desktop\\부산소방서\\busan119-intentParsing-Project\\src\\main\\java\\com\\example\\excelparsing\\intent\\";
     public static final String txtFilePath = "/home/ktj/바탕화면/의도/";
     public static long rowCount = 0;
@@ -42,12 +42,26 @@ public class PoiExcel {
     public static List<String> callCenterList = new ArrayList<>(); // 콜센터
 
     public static void main(String args[ ]) {
-
         printInitLog();
         readIntentFiles();
         //CreateExcel();
         ReadExcel();
         printResultLog();
+    }
+
+    public static  void filePathTest( ) {
+        File path = new File("inputIntent/구급.txt");
+        String FileName = path.getAbsolutePath();
+        File file = new File(FileName);
+        //입력 스트림 생성
+        FileReader filereader = null;
+        try {
+            filereader = new FileReader(file);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        //입력 버퍼 생성
+        BufferedReader bufReader = new BufferedReader(filereader);
     }
 
     public static void printInitLog( ) {
