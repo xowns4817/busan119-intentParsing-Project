@@ -23,7 +23,7 @@ public class PoiExcel {
     public static final String excelFileName = "test_busan_14.xlsx";
     public static final String[ ] intents = {"구급", "구조", "화재", "기타", "추가문의"};
     public static final String[ ] speakers = {"콜센터"};
-    public static final String[ ] excludeWords = {"아파트", "불편", "불안", "불렀", "불거든","불가", "인사불성", "고집불통", "숯불갈비", "불고기", "불루", "기다리", "벌어", "벌써", "벌었", "벌겋" }; // 아파, 불, 다리, 벌
+    public static final String[ ] excludeWords = {"아파트", "불러", "불편", "불안", "불렀", "불거든","불가", "인사불성", "고집불통", "숯불갈비", "불고기", "불루", "기다리", "벌어", "벌써", "벌었", "벌겋" }; // 아파, 불, 다리, 벌
     //public static final String txtFilePath = "C:\\Users\\KTJ\\Desktop\\부산소방서\\busan119-intentParsing-Project\\src\\main\\java\\com\\example\\excelparsing\\intent\\";
     public static final String txtFilePath = "/home/ktj/바탕화면/의도/";
     public static long rowCount = 0;
