@@ -49,7 +49,7 @@ public class PoiExcel {
         printResultLog();
     }
 
-    public static  void filePathTest( ) {
+    public static void filePathTest( ) {
         File path = new File("inputIntent/구급.txt");
         String FileName = path.getAbsolutePath();
         File file = new File(FileName);
